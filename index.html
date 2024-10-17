@@ -125,14 +125,14 @@
 <script>
     // JSONBin configuration
     const jsonBinUrl = "https://super-limit-9edf.olavi-kurola.workers.dev/";
-    const jsonBinSecret = "$2a$10$F7.gQEqhUsrQ7ea7kvea5.l5bOxhmlQIknmYEEPjWT/i9NuA8Ssr.";
+    
 
     async function saveLeaderboard(playerName, finalBalance) {
         try {
             const response = await fetch(jsonBinUrl, {
                 method: 'GET',
                 headers: {
-                    'X-Master-Key': jsonBinSecret
+                    
                 }
             });
             let leaderboardData = await response.json();
