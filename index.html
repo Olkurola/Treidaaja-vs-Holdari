@@ -122,21 +122,49 @@
 
 </head>
 <body>
-<script>
-    // JSONBin configuration
-    const jsonBinUrl = "https://super-limit-9edf.olavi-kurola.workers.dev/";
+    <div class="container">
+        <h1>Treidaaja vs Holdari</h1>
+        <div id="news-marquee-container">
+            <marquee id="news-marquee" behavior="scroll" direction="left"></marquee>
+        </div>
+        <canvas id="stockChart"></canvas>
+        <div class="info-box" id="controls">
+            <button class="buy-button" onclick="buyStock()">Osta</button>
+            <button class="sell-button" onclick="sellStock()">Myy</button>
+            <button onclick="startGame()">Aloita peli</button>
+        </div>
+        <div class="info-box" id="info">
+            <p>Saldo: <span id="balance">1000 €</span></p>
+            <p>Voitto/Tappio: <span id="profitLoss">0 €</span></p>
+            <p>Position koko: <span id="position">0 osaketta</span></p>
+            <p>Kaupankäyntikulut: <span id="fees">0 €</span></p>
+            <p>Holdaamalla saatu arvo: <span id="holdValue">0 €</span></p>
+            <p>Osakkeen nykyinen arvo: <span id="live-price" class="price-stable">100.00 €</span> <span id="price-arrow">→</span></p>
+        </div>
+        <div id="result-box"></div>
+        <div id="leaderboard">
+            <h2>TOP 3 Pelaajat</h2>
+            <ul id="topPlayers">
+                <li>Ei tuloksia vielä</li>
+            </ul>
+        </div>
+    </div>
+    <script>
+        // JSONBin configuration
+        const jsonBinUrl = "https://super-limit-9edf.olavi-kurola.workers.dev/";
 
-    // Verify if Worker endpoint is accessible
-    fetch(jsonBinUrl, { method: 'GET' }).then(response => {
-        if (response.ok) {
-            console.log('Worker URL is accessible');
-        } else {
-            console.error('Worker URL is not accessible, status:', response.status);
-        }
-    }).catch(error => {
-        console.error('Failed to reach Worker URL:', error);
-    });
-            // Add missing leaderboard population script
+        // Verify if Worker endpoint is accessible
+        fetch(jsonBinUrl, { method: 'GET' }).then(response => {
+            if (response.ok) {
+                console.log('Worker URL is accessible');
+            } else {
+                console.error('Worker URL is not accessible, status:', response.status);
+            }
+        }).catch(error => {
+            console.error('Failed to reach Worker URL:', error);
+        });
+
+        // Add missing leaderboard population script
         const leaderboard = [];
         const leaderboardElement = document.getElementById('topPlayers');
         leaderboard.forEach(player => {
@@ -144,9 +172,8 @@
             listItem.innerHTML = `<span>${player.name}</span> <span>${player.score.toFixed(2)} €</span>`;
             leaderboardElement.appendChild(listItem);
         });
-        }
-    </script>
-<script>
+
+        // News ticker
         const newsItems = [
             "Breaking News: Tesla ilmoitti uuden sähkölentokoneen kehityksestä!",
             "Apple aikoo sijoittaa tekoälyn kehitykseen 10 miljardia dollaria!",
@@ -174,8 +201,5 @@
 
         updateNewsTicker();
     </script>
-<div id="news-marquee-container">
-        <marquee id="news-marquee" behavior="scroll" direction="left"></marquee>
-    </div>
 </body>
 </html>
