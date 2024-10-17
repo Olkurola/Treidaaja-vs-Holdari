@@ -9,38 +9,41 @@
             background-color: #000;
             color: #fff;
             font-family: Arial, sans-serif;
+            font-size: 14px;
         }
         .container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
+            gap: 10px;
             padding: 10px;
         }
         .info-box {
             background-color: #1e1e1e;
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.8);
             width: 100%;
-            max-width: 400px;
+            max-width: 350px;
         }
         canvas {
+            order: -1;
             border: 2px solid #555;
             background-color: #1e1e1e;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.8);
             width: 100%;
-            max-width: 400px;
+            max-width: 350px;
+            margin-bottom: 10px;
         }
         #controls {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 8px;
+            margin-bottom: 10px;
         }
         button {
-            padding: 10px;
-            font-size: 16px;
+            padding: 8px;
+            font-size: 14px;
             cursor: pointer;
             border: none;
             border-radius: 5px;
@@ -62,22 +65,22 @@
             background-color: #e53935;
         }
         #info p {
-            margin: 5px 0;
+            margin: 3px 0;
         }
         #result-box {
             background-color: #1e1e1e;
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.8);
-            margin-top: 20px;
             text-align: center;
-            max-width: 400px;
+            max-width: 350px;
             width: 100%;
+            margin-top: 10px;
         }
         #live-price {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
-            margin-top: 20px;
+            margin-top: 10px;
         }
         .price-up {
             color: #4CAF50;
@@ -89,14 +92,38 @@
             color: #fff;
         }
         #price-arrow {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
+        }
+        #leaderboard {
+            background-color: #1e1e1e;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.8);
+            max-width: 350px;
+            width: 100%;
+            margin-top: 10px;
+            text-align: center;
+        }
+        #topPlayers {
+            list-style-type: none;
+            padding: 0;
+        }
+        #topPlayers li {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            padding: 5px 0;
+        }
+        #topPlayers li span {
+            margin-left: 10px;
         }
     </style>
 </head>
 <body>
     <h2 style="text-align: center;">Treidaaja vs Holdari</h2>
     <div class="container">
+        <canvas id="chartCanvas" width="600" height="350"></canvas>
         <div class="info-box">
             <div id="controls">
                 <button class="buy-button" onclick="buyStock()">Osta</button>
@@ -112,9 +139,14 @@
                 <p>Tarkoitus on ostaa matalalta ja myydä korkealta!</p>
                 <p id="live-price">Osakkeen nykyinen arvo: <span id="stockPrice" class="price-stable">100.00</span> € <span id="price-arrow" class="price-stable">→</span></p>
             </div>
-            <div id="result-box"></div>
         </div>
-        <canvas id="chartCanvas" width="400" height="400"></canvas>
+        <div id="result-box"></div>
+        <div id="leaderboard">
+            <h3>TOP 3 Pelaajat</h3>
+            <ol id="topPlayers">
+                <li><span>Ei tuloksia vielä</span></li>
+            </ol>
+        </div>
     </div>
 
     <script>
@@ -125,15 +157,16 @@
         let currentPrice = 100;
         let lastPrice = currentPrice;
         let candles = [];
-        let lastActionPrice = null;
+        let actions = []; // To store buy and sell actions
         const gameDuration = 30000; // 30 seconds
         let gameInterval;
         let gameEndTimeout;
         let shortMA = []; // Short moving average
         let longMA = []; // Long moving average
         let transactionFees = 0;
-        const tradingFeeRate = 0.001; // 0.1% trading fee
+        const tradingFeeRate = 0.0015; // 0.1% trading fee
         let initialHoldValue = balance / currentPrice; // Buying all stocks initially
+        let leaderboard = []; // To store top 3 results
 
         function drawGrid() {
             ctx.strokeStyle = "#333";
@@ -162,7 +195,7 @@
             ctx.lineTo(canvas.width, canvas.height - 20);
             ctx.stroke();
             ctx.fillStyle = "#fff";
-            ctx.font = "12px Arial";
+            ctx.font = "10px Arial";
             ctx.fillText("Aika", canvas.width - 40, canvas.height - 5);
 
             // Y-axis
@@ -189,6 +222,11 @@
         }
 
         function drawCandle(x, open, close, high, low) {
+            high = Math.min(high, canvas.height - 20);
+            low = Math.max(low, 0);
+            close = Math.min(Math.max(close, 0), canvas.height - 20);
+            open = Math.min(Math.max(open, 0), canvas.height - 20);
+
             ctx.beginPath();
             ctx.moveTo(x, high);
             ctx.lineTo(x, low);
@@ -222,7 +260,7 @@
             ctx.beginPath();
             for (let i = 0; i < shortMA.length; i++) {
                 if (shortMA[i] !== null) {
-                    ctx.lineTo(50 + 10 * (i + 1), 400 - shortMA[i]);
+                    ctx.lineTo(50 + 7 * (i + 1), 350 - shortMA[i]);
                 }
             }
             ctx.stroke();
@@ -232,10 +270,21 @@
             ctx.beginPath();
             for (let i = 0; i < longMA.length; i++) {
                 if (longMA[i] !== null) {
-                    ctx.lineTo(50 + 10 * (i + 1), 400 - longMA[i]);
+                    ctx.lineTo(50 + 7 * (i + 1), 350 - longMA[i]);
                 }
             }
             ctx.stroke();
+        }
+
+        function drawActions() {
+            actions.forEach(action => {
+                ctx.beginPath();
+                ctx.moveTo(action.x, 0);
+                ctx.lineTo(action.x, canvas.height - 20);
+                ctx.strokeStyle = action.type === 'buy' ? '#0f0' : '#f00';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
         }
 
         function generateNewCandle() {
@@ -252,9 +301,9 @@
             const close = low + Math.random() * (high - low);
 
             lastPrice = currentPrice;
-            currentPrice = close;
-            candles.push({ open, close, high, low });
-            if (candles.length > 80) {
+            currentPrice = Math.max(0, close); // Ensure price does not go negative
+            candles.push({ open, close: currentPrice, high, low });
+            if (candles.length > 100) {
                 candles.shift();
             }
             calculateMovingAverages();
@@ -269,9 +318,10 @@
             drawAxes();
             ctx.strokeStyle = "#555";
             for (let i = 0; i < candles.length; i++) {
-                drawCandle(50 + 10 * (i + 1), 400 - candles[i].open, 400 - candles[i].close, 400 - candles[i].high, 400 - candles[i].low);
+                drawCandle(50 + 7 * (i + 1), 350 - candles[i].open, 350 - candles[i].close, 350 - candles[i].high, 350 - candles[i].low);
             }
             drawMovingAverages();
+            drawActions();
         }
 
         function buyStock() {
@@ -280,20 +330,18 @@
                 balance -= (currentPrice + fee);
                 transactionFees += fee;
                 ownedStock++;
-                lastActionPrice = currentPrice;
+                actions.push({ x: 50 + 7 * (candles.length + 1), type: 'buy' });
                 updateInfo();
             }
         }
 
         function sellStock() {
-            if (ownedStock > 0) {
-                const fee = currentPrice * tradingFeeRate;
-                balance += (currentPrice - fee);
-                transactionFees += fee;
-                ownedStock--;
-                lastActionPrice = currentPrice;
-                updateInfo();
-            }
+            const fee = currentPrice * tradingFeeRate;
+            balance += (currentPrice - fee);
+            transactionFees += fee;
+            ownedStock--;
+            actions.push({ x: 50 + 7 * (candles.length + 1), type: 'sell' });
+            updateInfo();
         }
 
         function updateInfo() {
@@ -338,6 +386,7 @@
             currentPrice = 100;
             lastPrice = currentPrice;
             candles = [];
+            actions = [];
             shortMA = [];
             longMA = [];
             transactionFees = 0;
@@ -361,6 +410,28 @@
                 resultMessage += "Holdari voitti sinut. Yritä uudelleen!";
             }
             document.getElementById("result-box").innerHTML = resultMessage;
+            checkLeaderboard(finalBalance);
+        }
+
+        function checkLeaderboard(finalBalance) {
+            let playerName = prompt("Pelin päätyttyä! Syötä nimesi saadaksesi paikan tulostaulussa (jos pääset TOP 3 joukkoon):");
+            if (!playerName) return;
+            leaderboard.push({ name: playerName, score: finalBalance });
+            leaderboard.sort((a, b) => b.score - a.score);
+            if (leaderboard.length > 3) {
+                leaderboard.pop();
+            }
+            updateLeaderboard();
+        }
+
+        function updateLeaderboard() {
+            const leaderboardElement = document.getElementById("topPlayers");
+            leaderboardElement.innerHTML = "";
+            leaderboard.forEach(player => {
+                const listItem = document.createElement("li");
+                listItem.innerHTML = `<span>${player.name}</span> <span>${player.score.toFixed(2)} €</span>`;
+                leaderboardElement.appendChild(listItem);
+            });
         }
     </script>
 </body>
