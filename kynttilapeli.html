@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treidaaja vs Holdari</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+        }
+        .info-box {
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.8);
+        }
+        canvas {
+            border: 2px solid #555;
+            background-color: #1e1e1e;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.8);
+        }
+        #controls {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        button {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.5);
+        }
+        .buy-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .buy-button:hover {
+            background-color: #45a049;
+        }
+        .sell-button {
+            background-color: #f44336;
+            color: white;
+        }
+        .sell-button:hover {
+            background-color: #e53935;
+        }
+        #info p {
+            margin: 5px 0;
+        }
+        #result-box {
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.8);
+            margin-top: 20px;
+            text-align: center;
+            max-width: 400px;
+            margin-left: 0;
+        }
+        #live-price {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .price-up {
+            color: #4CAF50;
+        }
+        .price-down {
+            color: #f44336;
+        }
+        .price-stable {
+            color: #fff;
+        }
+        #price-arrow {
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h2>Treidaaja vs Holdari</h2>
+    <div class="container">
+        <div class="info-box">
+            <div id="controls">
+                <button class="buy-button" onclick="buyStock()">Osta</button>
+                <button class="sell-button" onclick="sellStock()">Myy</button>
+                <button onclick="startGame()">Aloita peli</button>
+            </div>
+            <div id="info">
+                <p>Saldo: <span id="balance">1000</span> €</p>
+                <p>Voitto/Tappio: <span id="profitLoss">0</span> €</p>
+                <p>Position koko: <span id="positionSize">0</span> osaketta</p>
+                <p>Kaupankäyntikulut: <span id="transactionFees">0</span> €</p>
+                <p>Holdaamalla saatu arvo: <span id="holdValue">0</span> €</p>
+                <p>Tarkoitus on ostaa matalalta ja myydä korkealta!</p>
+                <p id="live-price">Osakkeen nykyinen arvo: <span id="stockPrice" class="price-stable">100.00</span> € <span id="price-arrow" class="price-stable">→</span></p>
+            </div>
+            <div id="result-box"></div>
+        </div>
+        <canvas id="chartCanvas" width="800" height="400"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("chartCanvas");
+        const ctx = canvas.getContext("2d");
+        let balance = 1000;
+        let ownedStock = 0;
+        let currentPrice = 100;
+        let lastPrice = currentPrice;
+        let candles = [];
+        let lastActionPrice = null;
+        const gameDuration = 30000; // 30 seconds
+        let gameInterval;
+        let gameEndTimeout;
+        let shortMA = []; // Short moving average
+        let longMA = []; // Long moving average
+        let transactionFees = 0;
+        const tradingFeeRate = 0.001; // 0.1% trading fee
+        let initialHoldValue = balance / currentPrice; // Buying all stocks initially
+
+        function drawGrid() {
+            ctx.strokeStyle = "#333";
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= canvas.width; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= canvas.height; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+
+        function drawAxes() {
+            ctx.strokeStyle = "#888";
+            ctx.lineWidth = 2;
+
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height - 20);
+            ctx.lineTo(canvas.width, canvas.height - 20);
+            ctx.stroke();
+            ctx.fillStyle = "#fff";
+            ctx.font = "12px Arial";
+            ctx.fillText("Aika", canvas.width - 40, canvas.height - 5);
+
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(50, 0);
+            ctx.lineTo(50, canvas.height);
+            ctx.stroke();
+            ctx.fillText("Osakkeen arvo", 60, 30);
+
+            // Add Y-axis values
+            const yStep = 50;
+            const valueStep = 20;
+            for (let y = 0; y <= canvas.height - 20; y += yStep) {
+                const value = ((canvas.height - 20 - y) / (canvas.height - 20)) * 200;
+                ctx.fillText(value.toFixed(0), 5, y + 10);
+            }
+
+            // Add X-axis values
+            const xStep = 100;
+            for (let x = 50; x <= canvas.width; x += xStep) {
+                const time = (x - 50) / 10;
+                ctx.fillText(time.toFixed(0), x - 10, canvas.height - 5);
+            }
+        }
+
+        function drawCandle(x, open, close, high, low) {
+            ctx.beginPath();
+            ctx.moveTo(x, high);
+            ctx.lineTo(x, low);
+            ctx.strokeStyle = "#888";
+            ctx.stroke();
+
+            ctx.fillStyle = close > open ? "#0f0" : "#f00";
+            ctx.fillRect(x - 5, Math.min(open, close), 10, Math.abs(close - open));
+        }
+
+        function calculateMovingAverages() {
+            const shortPeriod = 5;
+            const longPeriod = 15;
+
+            shortMA = candles.map((candle, index) => {
+                if (index < shortPeriod - 1) return null;
+                const slice = candles.slice(index - shortPeriod + 1, index + 1);
+                return slice.reduce((sum, c) => sum + c.close, 0) / shortPeriod;
+            });
+
+            longMA = candles.map((candle, index) => {
+                if (index < longPeriod - 1) return null;
+                const slice = candles.slice(index - longPeriod + 1, index + 1);
+                return slice.reduce((sum, c) => sum + c.close, 0) / longPeriod;
+            });
+        }
+
+        function drawMovingAverages() {
+            ctx.strokeStyle = "#00f";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < shortMA.length; i++) {
+                if (shortMA[i] !== null) {
+                    ctx.lineTo(50 + 10 * (i + 1), 400 - shortMA[i]);
+                }
+            }
+            ctx.stroke();
+
+            ctx.strokeStyle = "#ffa500";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < longMA.length; i++) {
+                if (longMA[i] !== null) {
+                    ctx.lineTo(50 + 10 * (i + 1), 400 - longMA[i]);
+                }
+            }
+            ctx.stroke();
+        }
+
+        function generateNewCandle() {
+            let volatility = 20;
+            if (Math.random() < 0.05) {
+                // Flash crash or rapid rise
+                const direction = Math.random() < 0.5 ? -1 : 1;
+                volatility = 100 * direction;
+            }
+
+            const open = currentPrice;
+            const high = open + Math.random() * volatility;
+            const low = open - Math.random() * volatility;
+            const close = low + Math.random() * (high - low);
+
+            lastPrice = currentPrice;
+            currentPrice = close;
+            candles.push({ open, close, high, low });
+            if (candles.length > 80) {
+                candles.shift();
+            }
+            calculateMovingAverages();
+            drawChart();
+            updateHoldValue();
+            updateLivePrice();
+        }
+
+        function drawChart() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            drawAxes();
+            ctx.strokeStyle = "#555";
+            for (let i = 0; i < candles.length; i++) {
+                drawCandle(50 + 10 * (i + 1), 400 - candles[i].open, 400 - candles[i].close, 400 - candles[i].high, 400 - candles[i].low);
+            }
+            drawMovingAverages();
+        }
+
+        function buyStock() {
+            if (balance >= currentPrice) {
+                const fee = currentPrice * tradingFeeRate;
+                balance -= (currentPrice + fee);
+                transactionFees += fee;
+                ownedStock++;
+                lastActionPrice = currentPrice;
+                updateInfo();
+            }
+        }
+
+        function sellStock() {
+            if (ownedStock > 0) {
+                const fee = currentPrice * tradingFeeRate;
+                balance += (currentPrice - fee);
+                transactionFees += fee;
+                ownedStock--;
+                lastActionPrice = currentPrice;
+                updateInfo();
+            }
+        }
+
+        function updateInfo() {
+            document.getElementById("balance").innerText = balance.toFixed(2);
+            const profitLoss = balance + (ownedStock * currentPrice) - 1000;
+            document.getElementById("profitLoss").innerText = profitLoss.toFixed(2);
+            document.getElementById("positionSize").innerText = ownedStock;
+            document.getElementById("transactionFees").innerText = transactionFees.toFixed(2);
+        }
+
+        function updateHoldValue() {
+            const holdValue = initialHoldValue * currentPrice;
+            document.getElementById("holdValue").innerText = holdValue.toFixed(2);
+        }
+
+        function updateLivePrice() {
+            const priceElement = document.getElementById("stockPrice");
+            const arrowElement = document.getElementById("price-arrow");
+
+            if (currentPrice > lastPrice) {
+                priceElement.className = "price-up";
+                arrowElement.className = "price-up";
+                arrowElement.innerText = "↑";
+            } else if (currentPrice < lastPrice) {
+                priceElement.className = "price-down";
+                arrowElement.className = "price-down";
+                arrowElement.innerText = "↓";
+            } else {
+                priceElement.className = "price-stable";
+                arrowElement.className = "price-stable";
+                arrowElement.innerText = "→";
+            }
+
+            priceElement.innerText = currentPrice.toFixed(2);
+        }
+
+        function startGame() {
+            clearInterval(gameInterval);
+            clearTimeout(gameEndTimeout);
+            balance = 1000;
+            ownedStock = 0;
+            currentPrice = 100;
+            lastPrice = currentPrice;
+            candles = [];
+            shortMA = [];
+            longMA = [];
+            transactionFees = 0;
+            initialHoldValue = balance / currentPrice;
+            updateInfo();
+            updateHoldValue();
+            updateLivePrice();
+            gameInterval = setInterval(generateNewCandle, 500); // Faster candle generation
+            gameEndTimeout = setTimeout(endGame, gameDuration);
+        }
+
+        function endGame() {
+            clearInterval(gameInterval);
+            const finalBalance = balance + (ownedStock * currentPrice);
+            const holdValue = initialHoldValue * currentPrice;
+            let resultMessage = `Peli päättyi! Lopullinen saldo: ${finalBalance.toFixed(2)} € <br>`;
+            resultMessage += `Holdaamalla saatu arvo: ${holdValue.toFixed(2)} € <br>`;
+            if (finalBalance > holdValue) {
+                resultMessage += "Voitit holdarin! Onnittelut!";
+            } else {
+                resultMessage += "Holdari voitti sinut. Yritä uudelleen!";
+            }
+            document.getElementById("result-box").innerHTML = resultMessage;
+        }
+    </script>
+</body>
+</html>
