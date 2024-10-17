@@ -121,7 +121,11 @@
     </style>
 </head>
 <body>
+    
     <h2 style="text-align: center;">Treidaaja vs Holdari</h2>
+    <div id="news-ticker" style="background-color: #333; color: #fff; padding: 10px; overflow: hidden; white-space: nowrap; width: 100%; max-width: 350px; text-align: center; margin: 0 auto;">
+        <marquee behavior="scroll" direction="left" id="news-marquee"></marquee>
+    </div>
     <div class="container">
         <canvas id="chartCanvas" width="600" height="350"></canvas>
         <div class="info-box">
@@ -433,6 +437,34 @@
                 leaderboardElement.appendChild(listItem);
             });
         }
+    </script>
+<script>
+        const newsItems = [
+            "Breaking News: Tesla ilmoitti uuden sähkölentokoneen kehityksestä!",
+            "Apple aikoo sijoittaa tekoälyn kehitykseen 10 miljardia dollaria!",
+            "Google osti startupin, joka kehittää aivo-ohjattuja tietokoneita!",
+            "Bitcoinin arvo laski 15 % viimeisen 24 tunnin aikana!",
+            "Amazon ilmoitti uudesta drone-toimitusjärjestelmästä!",
+            "Microsoftin pilvipalvelut kasvattivat tuloja 20 % viimeisellä neljänneksellä!",
+            "Netflix aikoo tuoda markkinoille uuden pelipalvelun!",
+            "Facebook muuttaa nimensä MetaWorldiksi!",
+            "SpaceX laukaisee pian ensimmäisen kaupallisen Mars-lennon!",
+            "Toyota ilmoitti uuden vetyauton tulemisesta markkinoille!",
+            "Sijoittajien luottamus markkinoihin vahvistuu maailmanlaajuisesti!",
+            "Elon Musk ilmoitti suunnitelmasta tuoda sähkölaivoja markkinoille!",
+            "Uusi kryptovaluutta 'FutureCoin' nousi 30 % yhdessä päivässä!",
+            "Öljyn hinta romahti 10 % globaalin kysynnän vähenemisen vuoksi!",
+            "Kullan arvo nousi 5 % sijoittajien etsiessä turvallisia sijoituksia!",
+            "Pörssiyhtiö ABC ilmoitti suurimmasta osinkojaosta yhtiön historiassa!",
+            "Uusi älyautoyhtiö sai miljardiluokan sijoituksen riskisijoittajilta!"
+        ];
+
+        function updateNewsTicker() {
+            const shuffledNews = newsItems.sort(() => Math.random() - 0.5);
+            document.getElementById("news-marquee").innerText = shuffledNews.join(" | ");
+        }
+
+        updateNewsTicker();
     </script>
 </body>
 </html>
