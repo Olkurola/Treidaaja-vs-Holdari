@@ -136,11 +136,14 @@
     }).catch(error => {
         console.error('Failed to reach Worker URL:', error);
     });
-            leaderboard.forEach(player => {
-                const listItem = document.createElement("li");
-                listItem.innerHTML = `<span>${player.name}</span> <span>${player.score.toFixed(2)} €</span>`;
-                leaderboardElement.appendChild(listItem);
-            });
+            // Add missing leaderboard population script
+        const leaderboard = [];
+        const leaderboardElement = document.getElementById('topPlayers');
+        leaderboard.forEach(player => {
+            const listItem = document.createElement("li");
+            listItem.innerHTML = `<span>${player.name}</span> <span>${player.score.toFixed(2)} €</span>`;
+            leaderboardElement.appendChild(listItem);
+        });
         }
     </script>
 <script>
@@ -171,5 +174,8 @@
 
         updateNewsTicker();
     </script>
+<div id="news-marquee-container">
+        <marquee id="news-marquee" behavior="scroll" direction="left"></marquee>
+    </div>
 </body>
 </html>
