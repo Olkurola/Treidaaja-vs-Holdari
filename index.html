@@ -136,7 +136,7 @@
                 }
             });
             let leaderboardData = await response.json();
-            leaderboardData = leaderboardData.record;
+            leaderboardData = leaderboardData.record.leaderboard || [];
 
             leaderboardData.push({ name: playerName, score: finalBalance });
             leaderboardData.sort((a, b) => b.score - a.score);
@@ -145,10 +145,9 @@
             await fetch(jsonBinUrl, {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-Master-Key': jsonBinSecret
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(leaderboardData)
+                body: JSON.stringify({ record: { leaderboard: leaderboardData } })
             });
 
             loadLeaderboard();
