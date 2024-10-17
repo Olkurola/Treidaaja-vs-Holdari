@@ -136,7 +136,7 @@
                 }
             });
             let leaderboardData = await response.json();
-            leaderboardData = leaderboardData.record.leaderboard || [];
+            leaderboardData = Array.isArray(leaderboardData.record.leaderboard) ? leaderboardData.record.leaderboard : [];
 
             leaderboardData.push({ name: playerName, score: finalBalance });
             leaderboardData.sort((a, b) => b.score - a.score);
