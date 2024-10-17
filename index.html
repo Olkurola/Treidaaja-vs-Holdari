@@ -140,7 +140,7 @@
 
             leaderboardData.push({ name: playerName, score: finalBalance });
             leaderboardData.sort((a, b) => b.score - a.score);
-            leaderboardData = leaderboardData.slice(0, 3); // Keep top 3
+            leaderboardData = leaderboardData.slice(0, 10); // Keep top 10
 
             await fetch(jsonBinUrl, {
                 method: 'PUT',
@@ -213,7 +213,7 @@
         </div>
         <div id="result-box"></div>
         <div id="leaderboard">
-            <h3>TOP 3 Pelaajat</h3>
+            <h3>TOP 10 Pelaajat</h3>
             <ol id="topPlayers">
                 <li><span>Ei tuloksia vielä</span></li>
             </ol>
