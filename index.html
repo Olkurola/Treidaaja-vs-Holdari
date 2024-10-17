@@ -12,24 +12,29 @@
         }
         .container {
             display: flex;
-            justify-content: center;
-            align-items: flex-start;
+            flex-direction: column;
+            align-items: center;
             gap: 20px;
+            padding: 10px;
         }
         .info-box {
             background-color: #1e1e1e;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.8);
+            width: 100%;
+            max-width: 400px;
         }
         canvas {
             border: 2px solid #555;
             background-color: #1e1e1e;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.8);
+            width: 100%;
+            max-width: 400px;
         }
         #controls {
             display: flex;
-            flex-direction: row;
+            flex-direction: column;
             gap: 10px;
             margin-bottom: 15px;
         }
@@ -40,6 +45,7 @@
             border: none;
             border-radius: 5px;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.5);
+            width: 100%;
         }
         .buy-button {
             background-color: #4CAF50;
@@ -66,7 +72,7 @@
             margin-top: 20px;
             text-align: center;
             max-width: 400px;
-            margin-left: 0;
+            width: 100%;
         }
         #live-price {
             font-size: 18px;
@@ -89,7 +95,7 @@
     </style>
 </head>
 <body>
-    <h2>Treidaaja vs Holdari</h2>
+    <h2 style="text-align: center;">Treidaaja vs Holdari</h2>
     <div class="container">
         <div class="info-box">
             <div id="controls">
@@ -108,7 +114,7 @@
             </div>
             <div id="result-box"></div>
         </div>
-        <canvas id="chartCanvas" width="800" height="400"></canvas>
+        <canvas id="chartCanvas" width="400" height="400"></canvas>
     </div>
 
     <script>
