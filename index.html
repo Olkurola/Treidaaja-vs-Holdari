@@ -119,8 +119,75 @@
             margin-left: 10px;
         }
     </style>
+
 </head>
 <body>
+<script>
+    // JSONBin configuration
+    const jsonBinUrl = "https://api.jsonbin.io/v3/b/67114c70ad19ca34f8ba3cb9";
+    const jsonBinSecret = "$2a$10$UexkIbT4IiwP6uuijqI8kuUgz3lv7XRnjyIqiLI0jigoT6a482IDK";
+
+    async function saveLeaderboard(playerName, finalBalance) {
+        try {
+            const response = await fetch(jsonBinUrl, {
+                method: 'GET',
+                headers: {
+                    'X-Master-Key': jsonBinSecret
+                }
+            });
+            let leaderboardData = await response.json();
+            leaderboardData = leaderboardData.record;
+
+            leaderboardData.push({ name: playerName, score: finalBalance });
+            leaderboardData.sort((a, b) => b.score - a.score);
+            leaderboardData = leaderboardData.slice(0, 3); // Keep top 3
+
+            await fetch(jsonBinUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': jsonBinSecret
+                },
+                body: JSON.stringify(leaderboardData)
+            });
+
+            loadLeaderboard();
+        } catch (error) {
+            console.error("Error saving leaderboard:", error);
+        }
+    }
+
+    async function loadLeaderboard() {
+        try {
+            const response = await fetch(jsonBinUrl, {
+                method: 'GET',
+                headers: {
+                    'X-Master-Key': jsonBinSecret
+                }
+            });
+            const data = await response.json();
+            const leaderboardData = data.record;
+            updateLeaderboard(leaderboardData);
+        } catch (error) {
+            console.error("Error loading leaderboard:", error);
+        }
+    }
+
+    function updateLeaderboard(leaderboardData) {
+        const leaderboardElement = document.getElementById("topPlayers");
+        leaderboardElement.innerHTML = "";
+        leaderboardData.forEach(player => {
+            const listItem = document.createElement("li");
+            listItem.innerHTML = `<span>${player.name}</span> <span>${player.score.toFixed(2)} €</span>`;
+            leaderboardElement.appendChild(listItem);
+        });
+    }
+
+    // Load leaderboard on page load
+    window.onload = function() {
+        loadLeaderboard();
+    };
+</script>
     
     <h2 style="text-align: center;">Treidaaja vs Holdari</h2>
     <div id="news-ticker" style="background-color: #333; color: #fff; padding: 10px; overflow: hidden; white-space: nowrap; width: 100%; max-width: 350px; text-align: center; margin: 0 auto;">
@@ -420,12 +487,7 @@
         function checkLeaderboard(finalBalance) {
             let playerName = prompt("Pelin päätyttyä! Syötä nimesi saadaksesi paikan tulostaulussa (jos pääset TOP 3 joukkoon):");
             if (!playerName) return;
-            leaderboard.push({ name: playerName, score: finalBalance });
-            leaderboard.sort((a, b) => b.score - a.score);
-            if (leaderboard.length > 3) {
-                leaderboard.pop();
-            }
-            updateLeaderboard();
+            saveLeaderboard(playerName, finalBalance);
         }
 
         function updateLeaderboard() {
